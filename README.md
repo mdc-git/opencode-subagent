@@ -1,17 +1,19 @@
-# OpenCode Model Subtask
+# OpenCode Model Subagent
 
-An OpenCode V2 plugin that lets you choose an available model before running a task in a native child session.
+An OpenCode V2 plugin for running selected-model native child sessions with either fresh or task-scoped parent context.
 
-The parent session keeps its model. The child runs as OpenCode's native `general` subagent with the selected model and
-reports its result through OpenCode's native subagent lifecycle.
+The parent session keeps its model. Child sessions run as OpenCode's native `general` subagent with the selected model
+and report results through OpenCode's native subagent lifecycle.
 
 ## Features
 
-- `/subagent:blank` opens a model picker using the models available at the current location.
+- `/subagent:blank` opens a model picker and sends only the supplied request to a fresh child session.
+- `/subagent:handoff` opens the same model picker, asks the main session model to generate concise task-scoped context,
+  then sends the original request verbatim plus that context to a fresh child session.
 - Supports model variants such as reasoning levels.
-- Preserves the complete slash-command argument string as the child task.
+- Preserves the complete slash-command argument string as the original child request.
 - Uses OpenCode's built-in `subagent` tool for child creation, permissions, background execution, and report-back.
-- Automatically allows `ask` permission checks for the exact subagent call initiated by `/subagent:blank`.
+- Automatically allows `ask` permission checks for the exact subagent call initiated by either slash command.
 - Respects an explicit `deny` for the `subagent` permission.
 - Provides separate deployed (`github.subagent`) and local-checkout (`local.subagent`) plugin identities.
 
@@ -36,11 +38,29 @@ Add the Git package to the global OpenCode configuration at `~/.config/opencode/
 
 OpenCode loads the package's server and TUI entrypoints together.
 
-Run:
+## Usage
+
+Run a child with no parent-session handoff:
 
 ```text
 /subagent:blank Explain the authentication flow and identify security risks.
 ```
+
+Run a child with task-scoped context from the current main session:
+
+```text
+/subagent:handoff Continue the authentication refactor and finish the remaining tests.
+```
+
+For `/subagent:handoff`, the main session model generates the handoff with the current conversation as context without
+adding that generation to session history. The generated context contains the current objective, key requirements and
+decisions, completed work, precise references, remaining work, and immediate next step. The plugin separately inserts
+the original slash-command argument verbatim, so the handoff model does not need to reproduce it.
+
+The selected model is used only by the child. The parent session's model is unchanged.
+
+Permission checks initiated by either slash command are auto-approved only when OpenCode evaluates them as `ask`.
+An explicit `deny` remains authoritative.
 
 ## Local checkout
 
@@ -53,20 +73,6 @@ opencode --standalone
 
 The project configuration disables the deployed server plugin and loads the local server source from `.opencode/`.
 The local server source advertises `.opencode/tui.ts`, so the connected TUI uses the corresponding local wrapper.
-
-## Usage
-
-In a session, run:
-
-```text
-/subagent:blank Explain the authentication flow and identify security risks.
-```
-
-Choose the model and variant when prompted. The complete slash-command argument string is sent to a fresh native
-`general` subagent using the selected model. The parent session's model is unchanged.
-
-Permission checks initiated by this slash command are auto-approved only when OpenCode evaluates them as `ask`.
-An explicit `deny` remains authoritative.
 
 ## Development
 

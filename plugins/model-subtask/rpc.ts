@@ -12,42 +12,45 @@ export type RunInput = {
   readonly model: ModelSelection
 }
 
+const method = {
+  input: {
+    type: "object",
+    properties: {
+      sessionID: { type: "string" },
+      text: { type: "string" },
+      model: {
+        type: "object",
+        properties: {
+          providerID: { type: "string" },
+          id: { type: "string" },
+          variant: { type: "string" },
+        },
+        required: ["providerID", "id"],
+        additionalProperties: false,
+      },
+    },
+    required: ["sessionID", "text", "model"],
+    additionalProperties: false,
+  },
+  output: {
+    type: "object",
+    additionalProperties: false,
+  },
+  errors: {
+    failed: {
+      type: "object",
+      properties: { message: { type: "string" } },
+      required: ["message"],
+      additionalProperties: false,
+    },
+  },
+} as const
+
 export const Subtask = Rpc.define({
   id: "github.subagent",
   methods: {
-    run: {
-      input: {
-        type: "object",
-        properties: {
-          sessionID: { type: "string" },
-          text: { type: "string" },
-          model: {
-            type: "object",
-            properties: {
-              providerID: { type: "string" },
-              id: { type: "string" },
-              variant: { type: "string" },
-            },
-            required: ["providerID", "id"],
-            additionalProperties: false,
-          },
-        },
-        required: ["sessionID", "text", "model"],
-        additionalProperties: false,
-      },
-      output: {
-        type: "object",
-        additionalProperties: false,
-      },
-      errors: {
-        failed: {
-          type: "object",
-          properties: { message: { type: "string" } },
-          required: ["message"],
-          additionalProperties: false,
-        },
-      },
-    },
+    run: method,
+    handoff: method,
   },
   events: {},
 })

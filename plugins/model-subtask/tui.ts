@@ -7,6 +7,7 @@ type ModelOption = {
 }
 
 type Location = Parameters<Plugin.Context["data"]["location"]["model"]["sync"]>[0]
+type Method = "run" | "handoff"
 
 function message(error: unknown) {
   if (typeof error === "object" && error !== null && "message" in error && typeof error.message === "string") {
@@ -25,14 +26,14 @@ async function selectModel(
     (model) => model.enabled && model.status !== "deprecated",
   )
   if (available.length === 0) {
-    context.ui.toast.show({ title: "Subtask", message: "No available models", variant: "warning" })
+    context.ui.toast.show({ title: "Subagent", message: "No available models", variant: "warning" })
     return
   }
 
   const session = context.data.session.get(sessionID)
   const current = session?.model
   const selected = await context.ui.dialog.select<ModelOption>({
-    title: "Select subtask model",
+    title: "Select subagent model",
     current: current ? { providerID: current.providerID, id: current.id } : undefined,
     options: [...available]
       .sort((a, b) => a.providerID.localeCompare(b.providerID) || a.name.localeCompare(b.name))
@@ -64,10 +65,10 @@ async function selectModel(
   }
 }
 
-async function run(context: Plugin.Context, input: string | undefined) {
+async function run(context: Plugin.Context, method: Method, input: string | undefined) {
   const route = context.ui.router.current()
   if (route.type !== "session") {
-    context.ui.toast.show({ title: "Subtask", message: "Open a session before running a subtask", variant: "warning" })
+    context.ui.toast.show({ title: "Subagent", message: "Open a session before running a subagent", variant: "warning" })
     return
   }
 
@@ -77,9 +78,12 @@ async function run(context: Plugin.Context, input: string | undefined) {
     const model = await selectModel(context, route.sessionID, location)
     if (!model) return
 
-    await context.client.rpc(Subtask).run({ sessionID: route.sessionID, text: input ?? "", model }, { location })
+    const request = { sessionID: route.sessionID, text: input ?? "", model }
+    const rpc = context.client.rpc(Subtask)
+    if (method === "handoff") await rpc.handoff(request, { location })
+    else await rpc.run(request, { location })
   } catch (error) {
-    context.ui.toast.show({ title: "Subtask failed", message: message(error), variant: "error" })
+    context.ui.toast.show({ title: "Subagent failed", message: message(error), variant: "error" })
   }
 }
 
@@ -94,12 +98,21 @@ export default Plugin.define({
           commands: [
             {
               id: "subagent.run",
-              title: "Run subtask with model",
-              description: "Choose a model and run a task in a native subagent",
+              title: "Run blank subagent",
+              description: "Choose a model and run a fresh native subagent",
               group: "Agent",
               palette: true,
               slash: { name: "subagent:blank", arguments: true },
-              run: (input) => run(context, input),
+              run: (input) => run(context, "run", input),
+            },
+            {
+              id: "subagent.handoff",
+              title: "Run handoff subagent",
+              description: "Choose a model and hand off task-scoped context to a native subagent",
+              group: "Agent",
+              palette: true,
+              slash: { name: "subagent:handoff", arguments: true },
+              run: (input) => run(context, "handoff", input),
             },
           ],
         }))
