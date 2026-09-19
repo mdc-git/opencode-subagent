@@ -1,4 +1,4 @@
-import { Rpc } from "@opencode/plugin"
+import { Rpc } from "@opencode/plugin/rpc"
 
 export type ModelSelection = {
   readonly providerID: string
@@ -40,10 +40,6 @@ export const Subtask = Rpc.define({
         additionalProperties: false,
       },
       errors: {
-        busy: {
-          type: "object",
-          additionalProperties: false,
-        },
         failed: {
           type: "object",
           properties: { message: { type: "string" } },

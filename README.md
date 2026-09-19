@@ -2,15 +2,15 @@
 
 An OpenCode V2 plugin that lets you choose an available model before running a task in a native child session.
 
-The parent session keeps its model. The child uses the selected model and reports its result through OpenCode's native
-subagent lifecycle.
+The parent session keeps its model. The child runs as OpenCode's native `general` subagent with the selected model and
+reports its result through OpenCode's native subagent lifecycle.
 
 ## Features
 
 - `/subtask` opens a model picker using the models available at the current location.
 - Supports model variants such as reasoning levels.
 - Preserves the complete slash-command argument string as the child task.
-- Uses the native `subagent: true` command lifecycle and report-back behavior.
+- Uses OpenCode's built-in `subagent` tool for child creation, permissions, background execution, and report-back.
 - Provides separate deployed (`github.subagent`) and local-checkout (`local.subagent`) plugin identities.
 
 ## Requirements
@@ -21,29 +21,20 @@ subagent lifecycle.
 
 ## Global GitHub installation
 
-Add the Git package and its native child command to the global OpenCode configuration at
-`~/.config/opencode/opencode.jsonc`:
+Add the Git package to the global OpenCode configuration at `~/.config/opencode/opencode.jsonc`:
 
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     "opencode-subagent@git+https://github.com/mdc-git/opencode-subagent.git"
-  ],
-  "commands": {
-    "subtask-child": {
-      "description": "Run task in a native child session",
-      "template": "$ARGUMENTS",
-      "subagent": true
-    }
-  }
+  ]
 }
 ```
 
-OpenCode installs and updates the plugin from Git; the JSON command definition supplies the native child command
-globally without copying plugin source files.
+OpenCode loads the package's server and TUI entrypoints together.
 
-Restart or reload OpenCode after changing the global configuration, then run:
+Run:
 
 ```text
 /subtask Explain the authentication flow and identify security risks.
@@ -51,19 +42,15 @@ Restart or reload OpenCode after changing the global configuration, then run:
 
 ## Local checkout
 
-Install dependencies and run the shared-service TUI with the project-local CLI profile:
+Install dependencies and run OpenCode from the repository root:
 
 ```sh
-cd /Storage/Development/opencode-plugins/opencode-subagent
 bun install
-OPENCODE_CONFIG_DIR="$PWD/.opencode" opencode
+opencode --standalone
 ```
 
-The project-local CLI profile disables the deployed TUI identity and loads `.opencode/plugins/subagent/tui.ts` as
-`local.subagent.tui`. The project server configuration loads the `local.subagent` server wrapper and registers the
-native `subtask-child` command locally.
-
-`subtask-child` is an internal command. Do not invoke it directly; `/subtask` is the user-facing command.
+The project configuration disables the deployed server plugin and loads the local server source from `.opencode/`.
+The local server source advertises `.opencode/tui.ts`, so the connected TUI uses the corresponding local wrapper.
 
 ## Usage
 
@@ -73,7 +60,8 @@ In a session, run:
 /subtask Explain the authentication flow and identify security risks.
 ```
 
-Choose the model and variant when prompted. The selected task text is passed to the native child session unchanged.
+Choose the model and variant when prompted. The complete slash-command argument string is sent to a fresh native
+`general` subagent using the selected model. The parent session's model is unchanged.
 
 ## Development
 
@@ -89,5 +77,5 @@ Inspect the distributable package contents:
 bun pm pack --dry-run
 ```
 
-Production plugin entrypoints are under `plugins/model-subtask/`. The `.opencode/` directory contains local checkout
-wrappers and configuration. Both deployment modes register `subtask-child` through JSON command configuration.
+Production plugin entrypoints are under `plugins/model-subtask/`. The `.opencode/` directory contains only local
+checkout configuration and identity wrappers.

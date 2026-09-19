@@ -1,5 +1,4 @@
 import { Plugin } from "@opencode/plugin/tui"
-import type { ModelInfo } from "@opencode/client"
 import { Subtask, type ModelSelection } from "./rpc.ts"
 
 type ModelOption = {
@@ -22,8 +21,9 @@ async function selectModel(
   location: Location,
 ): Promise<ModelSelection | undefined> {
   await context.data.location.model.sync(location)
-  const models = (context.data.location.model.list(location) ?? []) as ModelInfo[]
-  const available = models.filter((model) => model.enabled && model.status !== "deprecated")
+  const available = (context.data.location.model.list(location) ?? []).filter(
+    (model) => model.enabled && model.status !== "deprecated",
+  )
   if (available.length === 0) {
     context.ui.toast.show({ title: "Subtask", message: "No available models", variant: "warning" })
     return
@@ -65,8 +65,6 @@ async function selectModel(
 }
 
 async function run(context: Plugin.Context, input: string | undefined) {
-  const text = input?.trim() ?? ""
-
   const route = context.ui.router.current()
   if (route.type !== "session") {
     context.ui.toast.show({ title: "Subtask", message: "Open a session before running a subtask", variant: "warning" })
@@ -79,7 +77,7 @@ async function run(context: Plugin.Context, input: string | undefined) {
     const model = await selectModel(context, route.sessionID, location)
     if (!model) return
 
-    await context.client.rpc(Subtask).run({ sessionID: route.sessionID, text, model }, { location })
+    await context.client.rpc(Subtask).run({ sessionID: route.sessionID, text: input ?? "", model }, { location })
   } catch (error) {
     context.ui.toast.show({ title: "Subtask failed", message: message(error), variant: "error" })
   }
@@ -88,25 +86,19 @@ async function run(context: Plugin.Context, input: string | undefined) {
 export default Plugin.define({
   id: "github.subagent.tui",
   setup(context) {
-    return context.ui.slot({
-      append: "app",
-      render() {
-        context.keymap.layer(() => ({
-          mode: "global",
-          commands: [
-            {
-              id: "subagent.run",
-              title: "Run subtask with model",
-              description: "Choose a model and run a command as a native subtask",
-              group: "Agent",
-              palette: true,
-              slash: { name: "subtask", arguments: true },
-              run: (input) => run(context, input),
-            },
-          ],
-        }))
-        return null
-      },
-    })
+    context.keymap.layer(() => ({
+      mode: "global",
+      commands: [
+        {
+          id: "subagent.run",
+          title: "Run subtask with model",
+          description: "Choose a model and run a task in a native subagent",
+          group: "Agent",
+          palette: true,
+          slash: { name: "subtask", arguments: true },
+          run: (input) => run(context, input),
+        },
+      ],
+    }))
   },
 })
