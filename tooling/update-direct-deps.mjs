@@ -9,7 +9,9 @@ const sections = ['dependencies', 'devDependencies']
 const anchors = new Map([
   ['@opencode/plugin', { candidate: 'latest', write: 'candidate' }],
   ['@opencode/schema', { candidate: 'latest', write: 'candidate' }],
-  ['zod', { candidate: 'latest', write: 'candidate' }]
+  ['zod', { candidate: 'latest', write: 'candidate' }],
+  ['eslint-config-xo', { candidate: '^2.0.0', write: 'candidate' }],
+  ['typescript', { candidate: '^6.0.3', write: 'candidate' }]
 ])
 const apply = process.argv.includes('--apply')
 const pkg = JSON.parse(readFileSync(packagePath, 'utf8'))
