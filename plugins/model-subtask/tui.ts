@@ -86,19 +86,25 @@ async function run(context: Plugin.Context, input: string | undefined) {
 export default Plugin.define({
   id: "github.subagent.tui",
   setup(context) {
-    context.keymap.layer(() => ({
-      mode: "global",
-      commands: [
-        {
-          id: "subagent.run",
-          title: "Run subtask with model",
-          description: "Choose a model and run a task in a native subagent",
-          group: "Agent",
-          palette: true,
-          slash: { name: "subtask", arguments: true },
-          run: (input) => run(context, input),
-        },
-      ],
-    }))
+    return context.ui.slot({
+      append: "app",
+      render() {
+        context.keymap.layer(() => ({
+          mode: "global",
+          commands: [
+            {
+              id: "subagent.run",
+              title: "Run subtask with model",
+              description: "Choose a model and run a task in a native subagent",
+              group: "Agent",
+              palette: true,
+              slash: { name: "subtask", arguments: true },
+              run: (input) => run(context, input),
+            },
+          ],
+        }))
+        return null
+      },
+    })
   },
 })
