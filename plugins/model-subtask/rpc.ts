@@ -1,50 +1,33 @@
 import { Rpc } from "@opencode/plugin/rpc"
+import { Model, Provider, Session } from "@opencode/schema"
+import { z } from "zod"
 
-export type ModelSelection = {
-  readonly providerID: string
-  readonly id: string
-  readonly variant?: string
-}
+const ModelSelectionSchema = z
+  .object({
+    providerID: z.string().transform((value) => Provider.ID.make(value)),
+    id: z.string().transform((value) => Model.ID.make(value)),
+    variant: z.string().transform((value) => Model.VariantID.make(value)).optional(),
+  })
+  .strict()
 
-export type RunInput = {
-  readonly sessionID: string
-  readonly text: string
-  readonly model: ModelSelection
-}
+const RunInputSchema = z
+  .object({
+    sessionID: z.string().startsWith("ses").transform((value) => Session.ID.make(value)),
+    text: z.string(),
+    model: ModelSelectionSchema,
+  })
+  .strict()
+
+export type ModelSelection = z.input<typeof ModelSelectionSchema>
+export type RunInput = z.output<typeof RunInputSchema>
 
 const method = {
-  input: {
-    type: "object",
-    properties: {
-      sessionID: { type: "string" },
-      text: { type: "string" },
-      model: {
-        type: "object",
-        properties: {
-          providerID: { type: "string" },
-          id: { type: "string" },
-          variant: { type: "string" },
-        },
-        required: ["providerID", "id"],
-        additionalProperties: false,
-      },
-    },
-    required: ["sessionID", "text", "model"],
-    additionalProperties: false,
-  },
-  output: {
-    type: "object",
-    additionalProperties: false,
-  },
+  input: RunInputSchema,
+  output: z.object({}).strict(),
   errors: {
-    failed: {
-      type: "object",
-      properties: { message: { type: "string" } },
-      required: ["message"],
-      additionalProperties: false,
-    },
+    failed: z.object({ message: z.string() }).strict(),
   },
-} as const
+}
 
 export const Subtask = Rpc.define({
   id: "github.subagent",

@@ -1,14 +1,14 @@
-import { Plugin } from "@opencode/plugin"
+import { Agent, Plugin } from "@opencode/plugin"
+import { CallID, type Info as ToolInfo, type ToolContext } from "@opencode/plugin/promise/tool"
+import { SessionMessage } from "@opencode/schema"
+import type { Model } from "@opencode/schema/model"
 import { Subtask, type RunInput } from "./rpc.ts"
-
-type ToolEditor = Parameters<Parameters<Plugin.Context["tool"]["transform"]>[0]>[0]
-type ToolDefinition = ReturnType<ToolEditor["get"]>
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
 }
 
-function modelName(model: RunInput["model"]) {
+function modelName(model: Model.Ref) {
   return `${model.providerID}/${model.id}${model.variant === undefined ? "" : `#${model.variant}`}`
 }
 
@@ -51,11 +51,11 @@ function handoffPrompt(text: string, context: string) {
 export default Plugin.define({
   id: "github.subagent",
   async setup(ctx) {
-    let subagent: ToolDefinition
+    let subagent: ToolInfo
     const permitted = new Map<string, string>()
 
     await ctx.tool.transform((editor) => {
-      subagent = editor.get("subagent")
+      subagent = editor.get("subagent")!
     })
 
     await ctx.permission.hook("evaluate", (event) => {
@@ -64,17 +64,17 @@ export default Plugin.define({
       event.effect = "allow"
     })
 
-    async function spawn(request: RunInput, prompt: string, description: string) {
-      if (!subagent) throw new Error("OpenCode subagent tool is unavailable")
+    async function spawn(request: RunInput, prompt: string, description: string, signal: AbortSignal) {
+      signal.throwIfAborted()
 
-      const [session, messages] = await Promise.all([
-        ctx.session.get({ sessionID: request.sessionID }),
-        ctx.session.context({ sessionID: request.sessionID }),
-      ])
+      const session = await ctx.session.get({ sessionID: request.sessionID }, { signal })
+      const agent = session.agent ?? (await ctx.agent.list(undefined, { signal })).data[0]!.id
+      signal.throwIfAborted()
       const id = crypto.randomUUID()
 
       permitted.set(id, request.sessionID)
       try {
+        signal.throwIfAborted()
         await subagent.execute(
           {
             agent: "general",
@@ -85,11 +85,11 @@ export default Plugin.define({
           },
           {
             sessionID: request.sessionID,
-            agent: session.agent ?? "build",
-            messageID: messages.at(-1)?.id ?? request.sessionID,
-            id,
+            agent: Agent.ID.make(agent),
+            messageID: SessionMessage.ID.create(),
+            id: CallID.make(id),
             progress: async () => {},
-          } as Parameters<typeof subagent.execute>[1],
+          } satisfies ToolContext,
         )
       } finally {
         permitted.delete(id)
@@ -98,11 +98,12 @@ export default Plugin.define({
 
     await ctx.rpc.register(Subtask, {
       run: async (input, call) => {
-        const request = input as RunInput
+        const request = input
 
         try {
-          await spawn(request, request.text, "Selected model subagent")
+          await spawn(request, request.text, "Selected model subagent", call.signal)
         } catch (error) {
+          call.signal.throwIfAborted()
           const message = errorMessage(error)
           return call.error("failed", message, { message })
         }
@@ -110,15 +111,18 @@ export default Plugin.define({
         return {}
       },
       handoff: async (input, call) => {
-        const request = input as RunInput
+        const request = input
 
         try {
+          call.signal.throwIfAborted()
           const generated = await ctx.session.generate({
             sessionID: request.sessionID,
             prompt: handoffRequest(request.text),
-          })
-          await spawn(request, handoffPrompt(request.text, generated.text), "Selected model handoff")
+          }, { signal: call.signal })
+          call.signal.throwIfAborted()
+          await spawn(request, handoffPrompt(request.text, generated.text), "Selected model handoff", call.signal)
         } catch (error) {
+          call.signal.throwIfAborted()
           const message = errorMessage(error)
           return call.error("failed", message, { message })
         }

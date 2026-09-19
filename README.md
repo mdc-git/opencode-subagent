@@ -71,7 +71,8 @@ bun install
 opencode --standalone
 ```
 
-The project configuration disables the deployed server plugin and loads the local server source from `.opencode/`.
+The project configuration disables the deployed server and TUI plugin identities and loads the local server source from
+`.opencode/`.
 The local server source advertises `.opencode/tui.ts`, so the connected TUI uses the corresponding local wrapper.
 
 ## Development

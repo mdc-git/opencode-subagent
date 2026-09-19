@@ -14,7 +14,9 @@
     "plugins"
   ],
   "dependencies": {
-    "@opencode/plugin": "latest"
+    "@opencode/plugin": "latest",
+    "@opencode/schema": "latest",
+    "zod": "latest"
   },
   "peerDependencies": {
     "@opentui/core": ">=0.5.10",
