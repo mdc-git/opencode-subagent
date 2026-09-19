@@ -19,6 +19,36 @@ subagent lifecycle.
 - Bun for installation and development commands.
 - An OpenCode provider with at least one available model.
 
+## Global GitHub installation
+
+Add the Git package and its native child command to the global OpenCode configuration at
+`~/.config/opencode/opencode.jsonc`:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    "opencode-subagent@git+https://github.com/<owner>/<repository>.git"
+  ],
+  "commands": {
+    "subtask-child": {
+      "description": "Run task in a native child session",
+      "template": "$ARGUMENTS",
+      "subagent": true
+    }
+  }
+}
+```
+
+Replace `<owner>/<repository>` with the GitHub repository location. OpenCode installs and updates the plugin from Git;
+the JSON command definition supplies the native child command globally without copying plugin source files.
+
+Restart or reload OpenCode after changing the global configuration, then run:
+
+```text
+/subtask Explain the authentication flow and identify security risks.
+```
+
 ## Local checkout
 
 Install dependencies and run OpenCode from the repository root:
@@ -30,30 +60,6 @@ opencode --standalone
 
 The local configuration loads the `.opencode/` wrappers, uses the `local.subagent` identities, and replaces the
 deployed `github.subagent` plugin for this checkout.
-
-## Global deployment
-
-From the repository root, install the production entrypoints into the global plugin directory and install the native
-child command into OpenCode's global command directory:
-
-```sh
-plugin_dir="$HOME/.config/opencode/plugins/model-subtask"
-
-mkdir -p "$plugin_dir" "$HOME/.config/opencode/commands"
-
-cp plugins/model-subtask/index.ts \
-   plugins/model-subtask/rpc.ts \
-   plugins/model-subtask/tui.ts \
-   plugins/model-subtask/package.json \
-   "$plugin_dir/"
-
-bun install --cwd "$plugin_dir"
-
-cp commands/subtask-child.md \
-   "$HOME/.config/opencode/commands/subtask-child.md"
-```
-
-Reload or reopen OpenCode after deployment.
 
 `subtask-child` is an internal command. Do not invoke it directly; `/subtask` is the user-facing command.
 
@@ -82,5 +88,5 @@ bun pm pack --dry-run
 ```
 
 Production plugin entrypoints are under `plugins/model-subtask/`. The `.opencode/` directory contains local checkout
-wrappers and configuration. The packaged `commands/subtask-child.md` resource supplies the native child command used by
-the server plugin.
+wrappers, configuration, and the Markdown form of the native child command. The packaged `commands/subtask-child.md`
+resource matches the global JSON command definition.

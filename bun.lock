@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "opencode-blank-agent",
+      "name": "opencode-subagent",
       "dependencies": {
         "@opencode/plugin": "latest",
       },

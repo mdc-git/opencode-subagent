@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "opencode-blank-agent",
+  "name": "opencode-subagent",
   "version": "0.0.0",
   "private": true,
   "type": "module",
