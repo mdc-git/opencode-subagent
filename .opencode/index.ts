@@ -1,6 +1,6 @@
-import plugin from "../plugins/model-subtask/index.ts"
+import plugin from '../plugins/model-subtask/index.ts'
 
 export default {
   ...plugin,
-  id: "local.subagent",
+  id: 'local.subagent'
 }

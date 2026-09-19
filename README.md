@@ -20,6 +20,7 @@ and report results through OpenCode's native subagent lifecycle.
 ## Requirements
 
 - OpenCode V2.
+- Node.js 24 or newer.
 - Bun for installation and development commands.
 - An OpenCode provider with at least one available model.
 
@@ -30,9 +31,7 @@ Add the Git package to the global OpenCode configuration at `~/.config/opencode/
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": [
-    "opencode-subagent@git+https://github.com/mdc-git/opencode-subagent.git"
-  ]
+  "plugins": ["opencode-subagent@git+https://github.com/mdc-git/opencode-subagent.git"]
 }
 ```
 
@@ -77,10 +76,22 @@ The local server source advertises `.opencode/tui.ts`, so the connected TUI uses
 
 ## Development
 
-Run the TypeScript check:
+Install dependencies:
+
+```sh
+bun install --frozen-lockfile
+```
+
+Run repository checks:
 
 ```sh
 bun run check
+```
+
+Apply supported fixes and rerun validation:
+
+```sh
+bun run fix
 ```
 
 Inspect the distributable package contents:

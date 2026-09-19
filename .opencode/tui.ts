@@ -1,6 +1,6 @@
-import plugin from "../plugins/model-subtask/tui.ts"
+import plugin from '../plugins/model-subtask/tui.ts'
 
 export default {
   ...plugin,
-  id: "local.subagent.tui",
+  id: 'local.subagent.tui'
 }

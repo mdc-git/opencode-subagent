@@ -1,39 +1,50 @@
-import { Rpc } from "@opencode/plugin/rpc"
-import { Model, Provider, Session } from "@opencode/schema"
-import { z } from "zod"
+import { Rpc } from '@opencode/plugin/rpc'
+import { Model, Provider, Session } from '@opencode/schema'
+import { z } from 'zod'
 
-const ModelSelectionSchema = z
+const providerIdKey = 'providerID' as const
+const sessionIdKey = 'sessionID' as const
+
+const modelSelectionSchema = z
   .object({
-    providerID: z.string().transform((value) => Provider.ID.make(value)),
+    [providerIdKey]: z.string().transform((value) => Provider.ID.make(value)),
     id: z.string().transform((value) => Model.ID.make(value)),
-    variant: z.string().transform((value) => Model.VariantID.make(value)).optional(),
+    variant: z
+      .string()
+      .transform((value) => Model.VariantID.make(value))
+      .optional()
   })
   .strict()
 
-const RunInputSchema = z
+const runInputSchema = z
   .object({
-    sessionID: z.string().startsWith("ses").transform((value) => Session.ID.make(value)),
+    [sessionIdKey]: z
+      .string()
+      .startsWith('ses')
+      .transform((value) => Session.ID.make(value)),
     text: z.string(),
-    model: ModelSelectionSchema,
+    model: modelSelectionSchema
   })
   .strict()
 
-export type ModelSelection = z.input<typeof ModelSelectionSchema>
-export type RunInput = z.output<typeof RunInputSchema>
+export type ModelSelection = z.input<typeof modelSelectionSchema>
+export type RunInput = z.output<typeof runInputSchema>
 
 const method = {
-  input: RunInputSchema,
+  input: runInputSchema,
   output: z.object({}).strict(),
   errors: {
-    failed: z.object({ message: z.string() }).strict(),
-  },
+    failed: z.object({ message: z.string() }).strict()
+  }
 }
 
-export const Subtask = Rpc.define({
-  id: "github.subagent",
+const subtask = Rpc.define({
+  id: 'github.subagent',
   methods: {
     run: method,
-    handoff: method,
+    handoff: method
   },
-  events: {},
+  events: {}
 })
+
+export { subtask, subtask as Subtask }

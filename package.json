@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json.schemastore.org/package.json",
   "name": "opencode-subagent",
   "version": "0.0.0",
   "private": true,
@@ -10,6 +9,14 @@
     "./tui": "./plugins/model-subtask/tui.ts",
     "./rpc": "./plugins/model-subtask/rpc.ts"
   },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "check": "failed=0; node tooling/update-direct-deps.mjs || failed=1; prettier . --check --config tooling/prettier.json --ignore-path tooling/prettierignore || failed=1; eslint . --config tooling/eslint.config.js || failed=1; tsc --project tooling/tsconfig.json --noEmit || failed=1; node --test tooling/test/local-plugin.test.mjs || failed=1; depcruise --config tooling/dependency-cruiser.mjs plugins/model-subtask || failed=1; knip --config tooling/knip.json --tsConfig tooling/tsconfig.json || failed=1; bun audit || failed=1; bun pm pack --dry-run || failed=1; exit \"$failed\"",
+    "fix": "failed=0; node tooling/update-direct-deps.mjs --apply || failed=1; bun install || failed=1; bun audit fix || failed=1; knip --config tooling/knip.json --tsConfig tooling/tsconfig.json --fix || failed=1; prettier . --write --config tooling/prettier.json --ignore-path tooling/prettierignore || failed=1; eslint . --config tooling/eslint.config.js --fix || failed=1; bun install || failed=1; bun run check || failed=1; exit \"$failed\""
+  },
   "files": [
     "plugins"
   ],
@@ -18,19 +25,29 @@
     "@opencode/schema": "latest",
     "zod": "latest"
   },
+  "devDependencies": {
+    "@opentui/core": "^0.5.10",
+    "@opentui/solid": "^0.5.10",
+    "@types/node": "^26.6.2",
+    "dependency-cruiser": "^18.3.1",
+    "eslint": "^10.11.0",
+    "eslint-config-xo": "^2.0.0",
+    "eslint-plugin-boundaries": "^7.2.0",
+    "eslint-plugin-sonarjs": "^4.2.1",
+    "globals": "^17.12.0",
+    "knip": "^6.37.0",
+    "prettier": "^3.9.8",
+    "solid-js": "^1.9.0",
+    "typescript": "^6.0.3"
+  },
   "peerDependencies": {
     "@opentui/core": ">=0.5.10",
     "@opentui/solid": ">=0.5.10",
     "solid-js": ">=1.9.0"
   },
-  "devDependencies": {
-    "@opentui/core": "^0.5.10",
-    "@opentui/solid": "^0.5.10",
-    "solid-js": "^1.9.0",
-    "typescript": "^5.9.0"
+  "overrides": {
+    "@babel/core": "7.29.6",
+    "@opentelemetry/core": "2.8.0"
   },
-  "scripts": {
-    "check": "tsc --project tooling/tsconfig.json --noEmit",
-    "fix": "bun run check"
-  }
+  "$schema": "https://json.schemastore.org/package.json"
 }
