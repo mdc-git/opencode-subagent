@@ -1,6 +1,9 @@
 import { Plugin } from "@opencode/plugin"
 import { Subtask, type RunInput } from "./rpc.ts"
 
+type ToolEditor = Parameters<Parameters<Plugin.Context["tool"]["transform"]>[0]>[0]
+type ToolDefinition = ReturnType<ToolEditor["get"]>
+
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
 }
@@ -12,15 +15,21 @@ function modelName(model: RunInput["model"]) {
 export default Plugin.define({
   id: "github.subagent",
   async setup(ctx) {
+    let subagent: ToolDefinition
+
+    await ctx.tool.transform((editor) => {
+      subagent = editor.get("subagent")
+    })
+
     await ctx.rpc.register(Subtask, {
       run: async (input, call) => {
         const request = input as RunInput
 
         try {
+          if (!subagent) throw new Error("OpenCode subagent tool is unavailable")
+
           const session = await ctx.session.get({ sessionID: request.sessionID })
-          const agents = await ctx.agent.list()
           const messages = await ctx.session.context({ sessionID: request.sessionID })
-          const subagent = (await ctx.tool.list()).find((tool) => tool.id === "subagent")!
 
           await subagent.execute(
             {
@@ -32,7 +41,7 @@ export default Plugin.define({
             },
             {
               sessionID: request.sessionID,
-              agent: session.agent ?? agents.data[0]!.id,
+              agent: session.agent ?? "build",
               messageID: messages.at(-1)?.id ?? request.sessionID,
               id: crypto.randomUUID(),
               progress: async () => {},
