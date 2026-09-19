@@ -1,1 +1,12 @@
 node_modules/
+.learning/
+package-lock.json
+!.opencode/
+.opencode/*
+!.opencode/opencode.jsonc
+!.opencode/index.ts
+!.opencode/tui.ts
+!.opencode/commands/
+!.opencode/commands/subtask-child.md
+!commands/
+!commands/subtask-child.md

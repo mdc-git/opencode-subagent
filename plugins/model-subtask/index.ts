@@ -6,7 +6,7 @@ function errorMessage(error: unknown) {
 }
 
 export default Plugin.define({
-  id: "github.blank-agent.model-subtask",
+  id: "github.subagent",
   async setup(ctx) {
     const pending = new Map<string, ReturnType<typeof Model.Ref.make>>()
 

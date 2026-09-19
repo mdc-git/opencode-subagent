@@ -10,7 +10,8 @@
     "./rpc": "./plugins/model-subtask/rpc.ts"
   },
   "files": [
-    "plugins"
+    "plugins",
+    "commands"
   ],
   "dependencies": {
     "@opencode/plugin": "latest"

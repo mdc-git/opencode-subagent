@@ -86,7 +86,7 @@ async function run(context: Plugin.Context, input: string | undefined) {
 }
 
 export default Plugin.define({
-  id: "github.blank-agent.model-subtask.tui",
+  id: "github.subagent.tui",
   setup(context) {
     return context.ui.slot({
       append: "app",
@@ -95,7 +95,7 @@ export default Plugin.define({
           mode: "global",
           commands: [
             {
-              id: "blank-agent.subtask.run",
+              id: "subagent.run",
               title: "Run subtask with model",
               description: "Choose a model and run a command as a native subtask",
               group: "Agent",

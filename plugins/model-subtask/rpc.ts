@@ -13,7 +13,7 @@ export type RunInput = {
 }
 
 export const Subtask = Rpc.define({
-  id: "blank-agent.subtask",
+  id: "github.subagent",
   methods: {
     run: {
       input: {
