@@ -3,6 +3,7 @@
   "name": "opencode-subagent",
   "version": "0.0.0",
   "private": true,
+  "repository": "github:mdc-git/opencode-subagent",
   "type": "module",
   "exports": {
     ".": "./plugins/model-subtask/index.ts",
@@ -10,8 +11,7 @@
     "./rpc": "./plugins/model-subtask/rpc.ts"
   },
   "files": [
-    "plugins",
-    "commands"
+    "plugins"
   ],
   "dependencies": {
     "@opencode/plugin": "latest"
