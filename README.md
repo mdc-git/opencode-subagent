@@ -7,11 +7,11 @@ reports its result through OpenCode's native subagent lifecycle.
 
 ## Features
 
-- `/subtask` opens a model picker using the models available at the current location.
+- `/subagent:blank` opens a model picker using the models available at the current location.
 - Supports model variants such as reasoning levels.
 - Preserves the complete slash-command argument string as the child task.
 - Uses OpenCode's built-in `subagent` tool for child creation, permissions, background execution, and report-back.
-- Automatically allows `ask` permission checks for the exact subagent call initiated by `/subtask`.
+- Automatically allows `ask` permission checks for the exact subagent call initiated by `/subagent:blank`.
 - Respects an explicit `deny` for the `subagent` permission.
 - Provides separate deployed (`github.subagent`) and local-checkout (`local.subagent`) plugin identities.
 
@@ -39,7 +39,7 @@ OpenCode loads the package's server and TUI entrypoints together.
 Run:
 
 ```text
-/subtask Explain the authentication flow and identify security risks.
+/subagent:blank Explain the authentication flow and identify security risks.
 ```
 
 ## Local checkout
@@ -59,7 +59,7 @@ The local server source advertises `.opencode/tui.ts`, so the connected TUI uses
 In a session, run:
 
 ```text
-/subtask Explain the authentication flow and identify security risks.
+/subagent:blank Explain the authentication flow and identify security risks.
 ```
 
 Choose the model and variant when prompted. The complete slash-command argument string is sent to a fresh native
