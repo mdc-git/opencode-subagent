@@ -98,7 +98,7 @@ export default Plugin.define({
               description: "Choose a model and run a task in a native subagent",
               group: "Agent",
               palette: true,
-              slash: { name: "subtask", arguments: true },
+              slash: { name: "subagent:blank", arguments: true },
               run: (input) => run(context, input),
             },
           ],
