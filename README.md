@@ -28,7 +28,7 @@ Add the Git package and its native child command to the global OpenCode configur
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    "opencode-subagent@git+https://github.com/<owner>/<repository>.git"
+    "opencode-subagent@git+https://github.com/mdc-git/opencode-subagent.git"
   ],
   "commands": {
     "subtask-child": {
@@ -40,8 +40,8 @@ Add the Git package and its native child command to the global OpenCode configur
 }
 ```
 
-Replace `<owner>/<repository>` with the GitHub repository location. OpenCode installs and updates the plugin from Git;
-the JSON command definition supplies the native child command globally without copying plugin source files.
+OpenCode installs and updates the plugin from Git; the JSON command definition supplies the native child command
+globally without copying plugin source files.
 
 Restart or reload OpenCode after changing the global configuration, then run:
 
@@ -58,8 +58,8 @@ bun install
 opencode --standalone
 ```
 
-The local configuration loads the `.opencode/` wrappers, uses the `local.subagent` identities, and replaces the
-deployed `github.subagent` plugin for this checkout.
+The local configuration loads the `.opencode/` wrappers, uses the `local.subagent` identities, replaces the deployed
+`github.subagent` plugin for this checkout, and registers the same native `subtask-child` command locally.
 
 `subtask-child` is an internal command. Do not invoke it directly; `/subtask` is the user-facing command.
 
@@ -88,5 +88,4 @@ bun pm pack --dry-run
 ```
 
 Production plugin entrypoints are under `plugins/model-subtask/`. The `.opencode/` directory contains local checkout
-wrappers, configuration, and the Markdown form of the native child command. The packaged `commands/subtask-child.md`
-resource matches the global JSON command definition.
+wrappers and configuration. Both deployment modes register `subtask-child` through JSON command configuration.

@@ -2,8 +2,16 @@
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     "-github.subagent",
+    "-github.subagent.tui",
     {
       "package": "./"
     }
-  ]
+  ],
+  "commands": {
+    "subtask-child": {
+      "description": "Run task in a native child session",
+      "template": "$ARGUMENTS",
+      "subagent": true
+    }
+  }
 }
