@@ -11,6 +11,8 @@ reports its result through OpenCode's native subagent lifecycle.
 - Supports model variants such as reasoning levels.
 - Preserves the complete slash-command argument string as the child task.
 - Uses OpenCode's built-in `subagent` tool for child creation, permissions, background execution, and report-back.
+- Automatically allows `ask` permission checks for the exact subagent call initiated by `/subtask`.
+- Respects an explicit `deny` for the `subagent` permission.
 - Provides separate deployed (`github.subagent`) and local-checkout (`local.subagent`) plugin identities.
 
 ## Requirements
@@ -62,6 +64,9 @@ In a session, run:
 
 Choose the model and variant when prompted. The complete slash-command argument string is sent to a fresh native
 `general` subagent using the selected model. The parent session's model is unchanged.
+
+Permission checks initiated by this slash command are auto-approved only when OpenCode evaluates them as `ask`.
+An explicit `deny` remains authoritative.
 
 ## Development
 

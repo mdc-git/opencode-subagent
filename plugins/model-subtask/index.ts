@@ -16,9 +16,16 @@ export default Plugin.define({
   id: "github.subagent",
   async setup(ctx) {
     let subagent: ToolDefinition
+    const permitted = new Map<string, string>()
 
     await ctx.tool.transform((editor) => {
       subagent = editor.get("subagent")
+    })
+
+    await ctx.permission.hook("evaluate", (event) => {
+      if (event.action !== "subagent" || event.effect !== "ask" || event.source?.type !== "tool") return
+      if (permitted.get(event.source.id) !== event.sessionID) return
+      event.effect = "allow"
     })
 
     await ctx.rpc.register(Subtask, {
@@ -30,23 +37,29 @@ export default Plugin.define({
 
           const session = await ctx.session.get({ sessionID: request.sessionID })
           const messages = await ctx.session.context({ sessionID: request.sessionID })
+          const id = crypto.randomUUID()
 
-          await subagent.execute(
-            {
-              agent: "general",
-              description: "Selected model subtask",
-              prompt: request.text,
-              model: modelName(request.model),
-              background: true,
-            },
-            {
-              sessionID: request.sessionID,
-              agent: session.agent ?? "build",
-              messageID: messages.at(-1)?.id ?? request.sessionID,
-              id: crypto.randomUUID(),
-              progress: async () => {},
-            } as Parameters<typeof subagent.execute>[1],
-          )
+          permitted.set(id, request.sessionID)
+          try {
+            await subagent.execute(
+              {
+                agent: "general",
+                description: "Selected model subtask",
+                prompt: request.text,
+                model: modelName(request.model),
+                background: true,
+              },
+              {
+                sessionID: request.sessionID,
+                agent: session.agent ?? "build",
+                messageID: messages.at(-1)?.id ?? request.sessionID,
+                id,
+                progress: async () => {},
+              } as Parameters<typeof subagent.execute>[1],
+            )
+          } finally {
+            permitted.delete(id)
+          }
         } catch (error) {
           const message = errorMessage(error)
           return call.error("failed", message, { message })
