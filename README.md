@@ -51,15 +51,17 @@ Restart or reload OpenCode after changing the global configuration, then run:
 
 ## Local checkout
 
-Install dependencies and run OpenCode from the repository root:
+Install dependencies and run the shared-service TUI with the project-local CLI profile:
 
 ```sh
+cd /Storage/Development/opencode-plugins/opencode-subagent
 bun install
-opencode --standalone
+OPENCODE_CONFIG_DIR="$PWD/.opencode" opencode
 ```
 
-The local configuration loads the `.opencode/` wrappers, uses the `local.subagent` identities, replaces the deployed
-`github.subagent` plugin for this checkout, and registers the same native `subtask-child` command locally.
+The project-local CLI profile disables the deployed TUI identity and loads `.opencode/plugins/subagent/tui.ts` as
+`local.subagent.tui`. The project server configuration loads the `local.subagent` server wrapper and registers the
+native `subtask-child` command locally.
 
 `subtask-child` is an internal command. Do not invoke it directly; `/subtask` is the user-facing command.
 

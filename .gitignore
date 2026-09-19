@@ -5,4 +5,7 @@ package-lock.json
 .opencode/*
 !.opencode/opencode.jsonc
 !.opencode/index.ts
-!.opencode/tui.ts
+!.opencode/cli.json
+!.opencode/plugins/
+!.opencode/plugins/subagent/
+!.opencode/plugins/subagent/tui.ts
