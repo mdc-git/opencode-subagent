@@ -1,7 +1,7 @@
 import { Agent, Plugin } from '@opencode/plugin'
 import type { PermissionEvaluation } from '@opencode/plugin/promise/permission'
 import type { RpcCallContext } from '@opencode/plugin/promise/rpc'
-import { CallID, type Info as ToolInfo, type ToolContext } from '@opencode/plugin/promise/tool'
+import { CallID, type ToolContext } from '@opencode/plugin/promise/tool'
 import { SessionMessage } from '@opencode/schema'
 import type { Model } from '@opencode/schema/model'
 import { subtask, type RunInput } from './rpc.ts'
@@ -11,7 +11,6 @@ const messageIdKey = 'messageID' as const
 
 type Runtime = {
   readonly ctx: Plugin.Context
-  readonly subagent: ToolInfo
   readonly permitted: Map<string, string>
 }
 
@@ -76,6 +75,16 @@ function toolSourceId(event: PermissionEvaluation) {
   return event.source?.type === 'tool' ? event.source.id : undefined
 }
 
+async function findSubagent(ctx: Plugin.Context) {
+  const tools = await ctx.tool.list()
+  const subagent = tools.find((tool) => tool.id === 'subagent')
+  if (subagent === undefined) {
+    throw new Error('OpenCode native subagent tool is unavailable')
+  }
+
+  return subagent
+}
+
 function allowSubagent(event: PermissionEvaluation, permitted: ReadonlyMap<string, string>) {
   if (!isSubagentAsk(event)) {
     return
@@ -94,7 +103,7 @@ function allowSubagent(event: PermissionEvaluation, permitted: ReadonlyMap<strin
 }
 
 async function spawn(input: SpawnInput) {
-  const { ctx, subagent, permitted, request, prompt, description, signal } = input
+  const { ctx, permitted, request, prompt, description, signal } = input
   signal.throwIfAborted()
 
   const session = await ctx.session.get({ [sessionIdKey]: request.sessionID }, { signal })
@@ -105,6 +114,7 @@ async function spawn(input: SpawnInput) {
   }
 
   signal.throwIfAborted()
+  const subagent = await findSubagent(ctx)
   const id = crypto.randomUUID()
 
   permitted.set(id, request.sessionID)
@@ -194,16 +204,11 @@ async function register(runtime: Runtime) {
 export default Plugin.define({
   id: 'github.subagent',
   async setup(ctx) {
-    let subagent!: ToolInfo
     const permitted = new Map<string, string>()
-
-    await ctx.tool.transform((editor) => {
-      subagent = editor.get('subagent')!
-    })
 
     await ctx.permission.hook('evaluate', (event) => {
       allowSubagent(event, permitted)
     })
-    await register({ ctx, subagent, permitted })
+    await register({ ctx, permitted })
   }
 })
