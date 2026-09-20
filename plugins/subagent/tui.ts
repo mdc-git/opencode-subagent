@@ -206,7 +206,7 @@ function sessionLocation(context: Plugin.Context, sessionID: string) {
 }
 
 export default Plugin.define({
-  id: 'github.subagent.tui',
+  id: 'mdc-git.subagent.tui',
   setup(context) {
     return context.ui.slot({
       append: 'app',

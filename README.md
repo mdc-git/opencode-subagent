@@ -15,7 +15,7 @@ and report results through OpenCode's native subagent lifecycle.
 - Uses OpenCode's built-in `subagent` tool for child creation, permissions, background execution, and report-back.
 - Automatically allows `ask` permission checks for the exact subagent call initiated by either slash command.
 - Respects an explicit `deny` for the `subagent` permission.
-- Provides separate deployed (`github.subagent`) and local-checkout (`local.subagent`) plugin identities.
+- Provides separate deployed (`mdc-git.subagent`) and local-checkout (`local.subagent`) plugin identities.
 
 ## Requirements
 
@@ -100,5 +100,5 @@ Inspect the distributable package contents:
 bun pm pack --dry-run
 ```
 
-Production plugin entrypoints are under `plugins/model-subtask/`. The `.opencode/` directory contains only local
+Production plugin entrypoints are under `plugins/subagent/`. The `.opencode/` directory contains only local
 checkout configuration and identity wrappers.

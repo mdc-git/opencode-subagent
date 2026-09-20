@@ -39,7 +39,7 @@ const method = {
 }
 
 const subtask = Rpc.define({
-  id: 'github.subagent',
+  id: 'mdc-git.subagent',
   methods: {
     run: method,
     handoff: method

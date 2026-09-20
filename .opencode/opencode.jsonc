@@ -1,4 +1,4 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["-github.subagent", "-github.subagent.*", "./"]
+  "plugins": ["-mdc-git.subagent", "-mdc-git.subagent.*", "./"]
 }

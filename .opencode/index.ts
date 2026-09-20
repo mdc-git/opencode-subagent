@@ -1,4 +1,4 @@
-import plugin from '../plugins/model-subtask/index.ts'
+import plugin from '../plugins/subagent/index.ts'
 
 export default {
   ...plugin,

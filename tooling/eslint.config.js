@@ -31,8 +31,8 @@ export default defineConfig([
         typescript: { project: 'tooling/tsconfig.json' }
       },
       'boundaries/files': [
-        { pattern: 'plugins/model-subtask/index.ts', category: 'entry' },
-        { pattern: 'plugins/model-subtask/{rpc,tui}.ts', category: 'core' }
+        { pattern: 'plugins/subagent/index.ts', category: 'entry' },
+        { pattern: 'plugins/subagent/{rpc,tui}.ts', category: 'core' }
       ]
     },
     plugins: {

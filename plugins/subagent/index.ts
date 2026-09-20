@@ -202,7 +202,7 @@ async function register(runtime: Runtime) {
 }
 
 export default Plugin.define({
-  id: 'github.subagent',
+  id: 'mdc-git.subagent',
   async setup(ctx) {
     const permitted = new Map<string, string>()
 
