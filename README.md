@@ -13,6 +13,7 @@ and report results through OpenCode's native subagent lifecycle.
 - Supports model variants such as reasoning levels.
 - Preserves the complete slash-command argument string as the original child request.
 - Uses OpenCode's built-in `subagent` tool for child creation, permissions, background execution, and report-back.
+- Adds the native background-start result to hidden parent-session context so the main agent knows the subagent is running.
 - Automatically allows `ask` permission checks for the exact subagent call initiated by either slash command.
 - Respects an explicit `deny` for the `subagent` permission.
 - Provides separate deployed (`mdc-git.subagent`) and local-checkout (`local.subagent`) plugin identities.

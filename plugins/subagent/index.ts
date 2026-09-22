@@ -116,7 +116,7 @@ async function spawn(input: SpawnInput) {
   permitted.set(id, request.sessionID)
   try {
     signal.throwIfAborted()
-    await subagent.execute(
+    const result = await subagent.execute(
       {
         agent: 'general',
         description,
@@ -134,6 +134,13 @@ async function spawn(input: SpawnInput) {
         }
       } satisfies ToolContext
     )
+    if (typeof result.content === 'string') {
+      await ctx.session.synthetic({
+        [sessionIdKey]: request.sessionID,
+        text: result.content,
+        resume: false
+      })
+    }
   } finally {
     permitted.delete(id)
   }
