@@ -49,12 +49,17 @@ function resolveGraph(manifest) {
   }
 }
 
-function bunResolvedVersion(lock, name) {
+function rootBunResolution(lock, name) {
   const resolution = lock.packages?.[name]?.[0]
   if (typeof resolution !== 'string') {
     throw new TypeError(`No root Bun resolution found for ${name}`)
   }
 
+  return resolution
+}
+
+function bunResolvedVersion(lock, name) {
+  const resolution = rootBunResolution(lock, name)
   const prefix = `${name}@`
   if (!resolution.startsWith(prefix)) {
     throw new Error(`Unexpected root Bun resolution for ${name}: ${resolution}`)

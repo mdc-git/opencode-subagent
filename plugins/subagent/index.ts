@@ -6,6 +6,9 @@ import { SessionMessage } from '@opencode/schema'
 import type { Model } from '@opencode/schema/model'
 import { subtask, type RunInput } from './rpc.ts'
 
+const sessionIdKey = 'sessionID' as const
+const messageIdKey = 'messageID' as const
+
 type Runtime = {
   readonly ctx: Plugin.Context
   readonly permitted: Map<string, string>
@@ -60,16 +63,12 @@ function handoffPrompt(text: string, context: string) {
   ].join('\n')
 }
 
-function allowSubagent(event: PermissionEvaluation, permitted: ReadonlyMap<string, string>) {
-  if (event.action !== 'subagent' || event.effect !== 'ask' || event.source?.type !== 'tool') {
-    return
-  }
+function isSubagentAsk(event: PermissionEvaluation) {
+  return event.action === 'subagent' && event.effect === 'ask'
+}
 
-  if (permitted.get(event.source.id) !== event.sessionID) {
-    return
-  }
-
-  event.effect = 'allow'
+function toolSourceId(event: PermissionEvaluation) {
+  return event.source?.type === 'tool' ? event.source.id : undefined
 }
 
 async function findSubagent(ctx: Plugin.Context) {
@@ -82,11 +81,28 @@ async function findSubagent(ctx: Plugin.Context) {
   return subagent
 }
 
+function allowSubagent(event: PermissionEvaluation, permitted: ReadonlyMap<string, string>) {
+  if (!isSubagentAsk(event)) {
+    return
+  }
+
+  const id = toolSourceId(event)
+  if (id === undefined) {
+    return
+  }
+
+  if (permitted.get(id) !== event.sessionID) {
+    return
+  }
+
+  event.effect = 'allow'
+}
+
 async function spawn(input: SpawnInput) {
   const { ctx, permitted, request, prompt, description, signal } = input
   signal.throwIfAborted()
 
-  const session = await ctx.session.get({ sessionID: request.sessionID }, { signal })
+  const session = await ctx.session.get({ [sessionIdKey]: request.sessionID }, { signal })
   let { agent } = session
   if (agent === undefined) {
     const agents = await ctx.agent.list(undefined, { signal })
@@ -109,9 +125,9 @@ async function spawn(input: SpawnInput) {
         background: true
       },
       {
-        sessionID: request.sessionID,
+        [sessionIdKey]: request.sessionID,
         agent: Agent.ID.make(agent),
-        messageID: SessionMessage.ID.create(),
+        [messageIdKey]: SessionMessage.ID.create(),
         id: CallID.make(id),
         async progress() {
           await Promise.resolve()
@@ -150,7 +166,7 @@ async function handoffSubagent(runtime: Runtime, input: RunInput, call: RpcCall)
     call.signal.throwIfAborted()
     const generated = await runtime.ctx.session.generate(
       {
-        sessionID: input.sessionID,
+        [sessionIdKey]: input.sessionID,
         prompt: handoffRequest(input.text)
       },
       { signal: call.signal }

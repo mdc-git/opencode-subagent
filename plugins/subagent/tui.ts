@@ -1,6 +1,9 @@
 import { Plugin } from '@opencode/plugin/tui'
 import { subtask, type ModelSelection } from './rpc.ts'
 
+const providerIdKey = 'providerID' as const
+const sessionIdKey = 'sessionID' as const
+
 type ModelOption = {
   readonly providerID: string
   readonly id: string
@@ -12,14 +15,28 @@ type ModelInfo = NonNullable<
   ReturnType<Plugin.Context['data']['location']['model']['list']>
 >[number]
 type SessionModel = NonNullable<ReturnType<Plugin.Context['data']['session']['get']>>['model']
+type Request = {
+  readonly [sessionIdKey]: string
+  readonly text: string
+  readonly model: ModelSelection
+}
+type ErrorWithMessage = { readonly message: string }
 
-function message(error: unknown) {
-  if (
+function hasMessage(error: unknown): error is ErrorWithMessage {
+  return (
     typeof error === 'object' &&
     error !== null &&
     'message' in error &&
     typeof error.message === 'string'
-  ) {
+  )
+}
+
+function message(error: unknown) {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  if (hasMessage(error)) {
     return error.message
   }
 
@@ -29,7 +46,7 @@ function message(error: unknown) {
 function modelOptions(available: readonly ModelInfo[]) {
   return available.toSorted(compareModels).map((model) => ({
     title: model.name,
-    value: { providerID: model.providerID, id: model.id },
+    value: { [providerIdKey]: model.providerID, id: model.id },
     description: model.providerID,
     footer: `${model.providerID}/${model.id}`,
     category: model.providerID
@@ -50,7 +67,7 @@ function currentOption(current: SessionModel): ModelOption | undefined {
     return
   }
 
-  return { providerID: current.providerID, id: current.id }
+  return { [providerIdKey]: current.providerID, id: current.id }
 }
 
 function currentVariant(current: SessionModel, selected: ModelSelection) {
@@ -127,6 +144,21 @@ async function selectModel(
   return chooseModel(context, available, context.data.session.get(sessionID)?.model)
 }
 
+async function invoke(
+  context: Plugin.Context,
+  method: Method,
+  request: Request,
+  location: Location
+) {
+  const rpc = context.client.rpc(subtask)
+  if (method === 'handoff') {
+    await rpc.handoff(request, { location })
+    return
+  }
+
+  await rpc.run(request, { location })
+}
+
 async function run(context: Plugin.Context, method: Method, input: string | undefined) {
   const route = context.ui.router.current()
   if (route.type !== 'session') {
@@ -139,23 +171,30 @@ async function run(context: Plugin.Context, method: Method, input: string | unde
   }
 
   try {
-    const session = context.data.session.get(route.sessionID)
-    const location = session?.location ?? context.location ?? context.data.location.default()
-    const model = await selectModel(context, route.sessionID, location)
-    if (model === undefined) {
-      return
-    }
-
-    const request = { sessionID: route.sessionID, text: input ?? '', model }
-    const rpc = context.client.rpc(subtask)
-    if (method === 'handoff') {
-      await rpc.handoff(request, { location })
-    } else {
-      await rpc.run(request, { location })
-    }
+    await runSession(context, method, route.sessionID, input)
   } catch (error) {
     context.ui.toast.show({ title: 'Subagent failed', message: message(error), variant: 'error' })
   }
+}
+
+async function runSession(
+  context: Plugin.Context,
+  method: Method,
+  sessionID: string,
+  input: string | undefined
+) {
+  const location = sessionLocation(context, sessionID)
+  const model = await selectModel(context, sessionID, location)
+  if (model === undefined) {
+    return
+  }
+
+  await invoke(context, method, { [sessionIdKey]: sessionID, text: input ?? '', model }, location)
+}
+
+function sessionLocation(context: Plugin.Context, sessionID: string) {
+  const session = context.data.session.get(sessionID)
+  return session?.location ?? context.location ?? context.data.location.default()
 }
 
 export default Plugin.define({
