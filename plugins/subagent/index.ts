@@ -138,7 +138,7 @@ async function spawn(input: SpawnInput) {
       await ctx.session.synthetic({
         [sessionIdKey]: request.sessionID,
         text: result.content,
-        resume: false
+        resume: true
       })
     }
   } finally {
