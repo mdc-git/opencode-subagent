@@ -6,9 +6,6 @@ import { SessionMessage } from '@opencode/schema'
 import type { Model } from '@opencode/schema/model'
 import { subtask, type RunInput } from './rpc.ts'
 
-const sessionIdKey = 'sessionID' as const
-const messageIdKey = 'messageID' as const
-
 type Runtime = {
   readonly ctx: Plugin.Context
   readonly permitted: Map<string, string>
@@ -22,10 +19,6 @@ type SpawnInput = Runtime & {
 }
 
 type RpcCall = RpcCallContext<(typeof subtask)['methods']['run']>
-
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error)
-}
 
 function modelName(model: Model.Ref) {
   return `${model.providerID}/${model.id}${model.variant === undefined ? '' : `#${model.variant}`}`
@@ -67,12 +60,16 @@ function handoffPrompt(text: string, context: string) {
   ].join('\n')
 }
 
-function isSubagentAsk(event: PermissionEvaluation) {
-  return event.action === 'subagent' && event.effect === 'ask'
-}
+function allowSubagent(event: PermissionEvaluation, permitted: ReadonlyMap<string, string>) {
+  if (event.action !== 'subagent' || event.effect !== 'ask' || event.source?.type !== 'tool') {
+    return
+  }
 
-function toolSourceId(event: PermissionEvaluation) {
-  return event.source?.type === 'tool' ? event.source.id : undefined
+  if (permitted.get(event.source.id) !== event.sessionID) {
+    return
+  }
+
+  event.effect = 'allow'
 }
 
 async function findSubagent(ctx: Plugin.Context) {
@@ -85,28 +82,11 @@ async function findSubagent(ctx: Plugin.Context) {
   return subagent
 }
 
-function allowSubagent(event: PermissionEvaluation, permitted: ReadonlyMap<string, string>) {
-  if (!isSubagentAsk(event)) {
-    return
-  }
-
-  const id = toolSourceId(event)
-  if (id === undefined) {
-    return
-  }
-
-  if (permitted.get(id) !== event.sessionID) {
-    return
-  }
-
-  event.effect = 'allow'
-}
-
 async function spawn(input: SpawnInput) {
   const { ctx, permitted, request, prompt, description, signal } = input
   signal.throwIfAborted()
 
-  const session = await ctx.session.get({ [sessionIdKey]: request.sessionID }, { signal })
+  const session = await ctx.session.get({ sessionID: request.sessionID }, { signal })
   let { agent } = session
   if (agent === undefined) {
     const agents = await ctx.agent.list(undefined, { signal })
@@ -129,9 +109,9 @@ async function spawn(input: SpawnInput) {
         background: true
       },
       {
-        [sessionIdKey]: request.sessionID,
+        sessionID: request.sessionID,
         agent: Agent.ID.make(agent),
-        [messageIdKey]: SessionMessage.ID.create(),
+        messageID: SessionMessage.ID.create(),
         id: CallID.make(id),
         async progress() {
           await Promise.resolve()
@@ -145,7 +125,7 @@ async function spawn(input: SpawnInput) {
 
 async function failure(call: RpcCall, error: unknown) {
   call.signal.throwIfAborted()
-  const message = errorMessage(error)
+  const message = error instanceof Error ? error.message : String(error)
   return call.error('failed', message, { message })
 }
 
@@ -170,7 +150,7 @@ async function handoffSubagent(runtime: Runtime, input: RunInput, call: RpcCall)
     call.signal.throwIfAborted()
     const generated = await runtime.ctx.session.generate(
       {
-        [sessionIdKey]: input.sessionID,
+        sessionID: input.sessionID,
         prompt: handoffRequest(input.text)
       },
       { signal: call.signal }
@@ -190,25 +170,21 @@ async function handoffSubagent(runtime: Runtime, input: RunInput, call: RpcCall)
   return {}
 }
 
-async function register(runtime: Runtime) {
-  await runtime.ctx.rpc.register(subtask, {
-    async run(input, call) {
-      return runSubagent(runtime, input, call)
-    },
-    async handoff(input, call) {
-      return handoffSubagent(runtime, input, call)
-    }
-  })
-}
-
 export default Plugin.define({
   id: 'mdc-git.subagent',
   async setup(ctx) {
-    const permitted = new Map<string, string>()
+    const runtime: Runtime = { ctx, permitted: new Map() }
 
     await ctx.permission.hook('evaluate', (event) => {
-      allowSubagent(event, permitted)
+      allowSubagent(event, runtime.permitted)
     })
-    await register({ ctx, permitted })
+    await ctx.rpc.register(subtask, {
+      async run(input, call) {
+        return runSubagent(runtime, input, call)
+      },
+      async handoff(input, call) {
+        return handoffSubagent(runtime, input, call)
+      }
+    })
   }
 })

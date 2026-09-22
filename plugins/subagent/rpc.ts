@@ -2,12 +2,9 @@ import { Rpc } from '@opencode/plugin/rpc'
 import { Model, Provider, Session } from '@opencode/schema'
 import { z } from 'zod'
 
-const providerIdKey = 'providerID' as const
-const sessionIdKey = 'sessionID' as const
-
 const modelSelectionSchema = z
   .object({
-    [providerIdKey]: z.string().transform((value) => Provider.ID.make(value)),
+    providerID: z.string().transform((value) => Provider.ID.make(value)),
     id: z.string().transform((value) => Model.ID.make(value)),
     variant: z
       .string()
@@ -18,7 +15,7 @@ const modelSelectionSchema = z
 
 const runInputSchema = z
   .object({
-    [sessionIdKey]: z
+    sessionID: z
       .string()
       .startsWith('ses')
       .transform((value) => Session.ID.make(value)),

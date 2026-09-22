@@ -6,12 +6,12 @@ import process from 'node:process'
 
 const packagePath = 'package.json'
 const sections = ['dependencies', 'devDependencies']
-const anchors = new Map([
-  ['@opencode/plugin', { candidate: 'latest', write: 'candidate' }],
-  ['@opencode/schema', { candidate: 'latest', write: 'candidate' }],
-  ['zod', { candidate: 'latest', write: 'candidate' }],
-  ['eslint-config-xo', { candidate: '^2.0.0', write: 'candidate' }],
-  ['typescript', { candidate: '^6.0.3', write: 'candidate' }]
+const specifierOverrides = new Map([
+  ['@opencode/plugin', 'latest'],
+  ['@opencode/schema', 'latest'],
+  ['zod', 'latest'],
+  ['eslint-config-xo', '^2.0.0'],
+  ['typescript', '^6.0.3']
 ])
 const apply = process.argv.includes('--apply')
 const pkg = JSON.parse(readFileSync(packagePath, 'utf8'))
@@ -32,54 +32,8 @@ function run(command, args, cwd) {
   }
 }
 
-function directSpecifier(manifest, name) {
-  for (const section of sections) {
-    const specifier = manifest[section]?.[name]
-    if (typeof specifier === 'string') {
-      return specifier
-    }
-  }
-
-  return undefined
-}
-
-function validateAnchorPolicy(manifest) {
-  if (anchors.size === 0) {
-    throw new Error('Configure at least one compatibility anchor before using this updater')
-  }
-
-  for (const [name, policy] of anchors) {
-    validateAnchor(manifest, name, policy)
-  }
-}
-
-function validateAnchor(manifest, name, policy) {
-  if (directSpecifier(manifest, name) === undefined) {
-    throw new Error(`Compatibility anchor is not a direct dependency: ${name}`)
-  }
-
-  validateCandidate(name, policy)
-  validateWritePolicy(name, policy)
-}
-
-function validateCandidate(name, policy) {
-  if (typeof policy.candidate !== 'string') {
-    throw new TypeError(`Compatibility anchor has no candidate constraint: ${name}`)
-  }
-
-  if (policy.candidate.length === 0) {
-    throw new TypeError(`Compatibility anchor has no candidate constraint: ${name}`)
-  }
-}
-
-function validateWritePolicy(name, policy) {
-  if (policy.write !== 'candidate' && policy.write !== 'resolved') {
-    throw new TypeError(`Compatibility anchor has invalid write policy: ${name}`)
-  }
-}
-
-function resolveCurrentGraph(manifest) {
-  const cwd = mkdtempSync(path.join(tmpdir(), 'direct-deps-current-'))
+function resolveGraph(manifest) {
+  const cwd = mkdtempSync(path.join(tmpdir(), 'direct-deps-'))
 
   try {
     writeFileSync(path.join(cwd, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`)
@@ -95,34 +49,12 @@ function resolveCurrentGraph(manifest) {
   }
 }
 
-function resolveCompatibleGraph(manifest) {
-  const cwd = mkdtempSync(path.join(tmpdir(), 'direct-deps-compatible-'))
-
-  try {
-    writeFileSync(path.join(cwd, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`)
-    run('bun', ['install', '--lockfile-only', '--ignore-scripts', '--no-cache'], cwd)
-    const source = [
-      "const text = await Bun.file('bun.lock').text()",
-      'process.stdout.write(JSON.stringify(Bun.JSONC.parse(text)))'
-    ].join(';')
-
-    return JSON.parse(run('bun', ['-e', source], cwd))
-  } finally {
-    rmSync(cwd, { recursive: true, force: true })
-  }
-}
-
-function rootBunResolution(lock, name) {
+function bunResolvedVersion(lock, name) {
   const resolution = lock.packages?.[name]?.[0]
   if (typeof resolution !== 'string') {
     throw new TypeError(`No root Bun resolution found for ${name}`)
   }
 
-  return resolution
-}
-
-function bunResolvedVersion(lock, name) {
-  const resolution = rootBunResolution(lock, name)
   const prefix = `${name}@`
   if (!resolution.startsWith(prefix)) {
     throw new Error(`Unexpected root Bun resolution for ${name}: ${resolution}`)
@@ -144,8 +76,7 @@ function nextSpecifier(current, version) {
 }
 
 function candidateSpecifier(name, baseline) {
-  const anchor = anchors.get(name)
-  return anchor?.candidate ?? `>=${bunResolvedVersion(baseline, name)}`
+  return specifierOverrides.get(name) ?? `>=${bunResolvedVersion(baseline, name)}`
 }
 
 function widenSection(manifest, section, baseline) {
@@ -155,12 +86,7 @@ function widenSection(manifest, section, baseline) {
 }
 
 function resolvedSpecifier(name, current, upgrade) {
-  const anchor = anchors.get(name)
-  if (anchor?.write === 'candidate') {
-    return anchor.candidate
-  }
-
-  return nextSpecifier(current, bunResolvedVersion(upgrade, name))
+  return specifierOverrides.get(name) ?? nextSpecifier(current, bunResolvedVersion(upgrade, name))
 }
 
 function dependencyChange(section, name, current, upgrade) {
@@ -180,16 +106,15 @@ function sectionChanges(manifest, section, upgrade) {
   return changes
 }
 
-validateAnchorPolicy(pkg)
 process.stdout.write('Resolving current dependency graph...\n')
-const baseline = resolveCurrentGraph(pkg)
+const baseline = resolveGraph(pkg)
 const candidate = structuredClone(pkg)
 for (const section of sections) {
   widenSection(candidate, section, baseline)
 }
 
 process.stdout.write('Resolving peer-compatible upgrade graph...\n')
-const upgrade = resolveCompatibleGraph(candidate)
+const upgrade = resolveGraph(candidate)
 const changes = sections.flatMap((section) => sectionChanges(pkg, section, upgrade))
 
 for (const { section, name, current, next } of changes) {
