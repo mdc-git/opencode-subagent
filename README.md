@@ -27,12 +27,13 @@ and report results through OpenCode's native subagent lifecycle.
 
 ## Global GitHub installation
 
-Add the Git package to the global OpenCode configuration at `~/.config/opencode/opencode.jsonc`:
+Add the Git package, pinned to tag `0.0.1`, to the global OpenCode
+configuration at `~/.config/opencode/opencode.jsonc`:
 
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["opencode-subagent@git+https://github.com/mdc-git/opencode-subagent.git"]
+  "plugins": ["opencode-subagent@git+https://github.com/mdc-git/opencode-subagent.git#0.0.1"]
 }
 ```
 
