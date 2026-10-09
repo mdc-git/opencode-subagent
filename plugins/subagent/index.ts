@@ -95,7 +95,8 @@ async function spawn(input: SpawnInput) {
   signal.throwIfAborted()
 
   let { agent } = await ctx.session.get({ [sessionIdKey]: request.sessionID }, { signal })
-  agent ??= (await ctx.agent.list(undefined, { signal })).data[0].id
+  const agents = agent === undefined ? await ctx.agent.list(undefined, { signal }) : undefined
+  agent ??= agents?.data[0].id
 
   signal.throwIfAborted()
   const subagent = await findSubagent(ctx)
@@ -122,13 +123,15 @@ async function spawn(input: SpawnInput) {
         }
       } satisfies ToolContext
     )
-    if (typeof result.content === 'string') {
-      await ctx.session.synthetic({
-        [sessionIdKey]: request.sessionID,
-        text: result.content,
-        resume: true
-      })
-    }
+    const synthetic =
+      typeof result.content === 'string'
+        ? ctx.session.synthetic({
+            [sessionIdKey]: request.sessionID,
+            text: result.content,
+            resume: true
+          })
+        : undefined
+    await synthetic
   } finally {
     permitted.delete(id)
   }
