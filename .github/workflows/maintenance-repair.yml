@@ -29,6 +29,9 @@ jobs:
       - name: Install current dependency graph
         run: bun install
 
+      - name: Install OpenCode V2
+        run: bun add --global --trust @opencode/cli@latest
+
       - name: Apply repository-supported fixes
         id: fix
         shell: bash
