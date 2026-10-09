@@ -121,14 +121,14 @@ async function plugin(base, project) {
 function waitForPlugin(base, project, diagnostics) {
   return new Promise((resolve, reject) => {
     let lastPlugin
-    const finish = (timer, interval, result) => {
+    const finish = (result) => {
       clearTimeout(timer)
       clearInterval(interval)
       result()
     }
 
     const timer = setTimeout(() => {
-      finish(timer, interval, () =>
+      finish(() =>
         reject(
           new Error(
             `local subagent plugin did not activate\nstate=${JSON.stringify(lastPlugin, null, 2)}\nstderr=${diagnostics()}`
@@ -141,11 +141,11 @@ function waitForPlugin(base, project, diagnostics) {
         .then((current) => {
           lastPlugin = current
           if (current?.state?.status === 'active') {
-            finish(timer, interval, () => resolve(current))
+            finish(() => resolve(current))
           }
         })
         .catch((error) => {
-          finish(timer, interval, () => reject(error))
+          finish(() => reject(error))
         })
     }
 
