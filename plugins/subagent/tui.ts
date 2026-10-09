@@ -32,15 +32,7 @@ function hasMessage(error: unknown): error is ErrorWithMessage {
 }
 
 function message(error: unknown) {
-  if (error instanceof Error) {
-    return error.message
-  }
-
-  if (hasMessage(error)) {
-    return error.message
-  }
-
-  return String(error)
+  return hasMessage(error) ? error.message : String(error)
 }
 
 function modelOptions(available: readonly ModelInfo[]) {
@@ -55,27 +47,17 @@ function modelOptions(available: readonly ModelInfo[]) {
 
 function compareModels(a: ModelInfo, b: ModelInfo) {
   const providers = a.providerID.localeCompare(b.providerID)
-  if (providers !== 0) {
-    return providers
-  }
-
-  return a.name.localeCompare(b.name)
+  return providers === 0 ? a.name.localeCompare(b.name) : providers
 }
 
 function currentOption(current: SessionModel): ModelOption | undefined {
-  if (current === undefined) {
-    return
-  }
-
-  return { [providerIdKey]: current.providerID, id: current.id }
+  return current === undefined ? undefined : { [providerIdKey]: current.providerID, id: current.id }
 }
 
 function currentVariant(current: SessionModel, selected: ModelSelection) {
-  if (current?.providerID !== selected.providerID || current.id !== selected.id) {
-    return
-  }
-
-  return current.variant
+  return current?.providerID === selected.providerID && current.id === selected.id
+    ? current.variant
+    : undefined
 }
 
 async function selectVariant(
@@ -181,7 +163,7 @@ async function runSession(
   context: Plugin.Context,
   method: Method,
   sessionID: string,
-  input: string | undefined
+  input: string | undefined = ''
 ) {
   const location = sessionLocation(context, sessionID)
   const model = await selectModel(context, sessionID, location)
@@ -189,7 +171,7 @@ async function runSession(
     return
   }
 
-  await invoke(context, method, { [sessionIdKey]: sessionID, text: input ?? '', model }, location)
+  await invoke(context, method, { [sessionIdKey]: sessionID, text: input, model }, location)
 }
 
 function sessionLocation(context: Plugin.Context, sessionID: string) {
@@ -197,7 +179,7 @@ function sessionLocation(context: Plugin.Context, sessionID: string) {
   return session?.location ?? context.location ?? context.data.location.default()
 }
 
-export default Plugin.define({
+const subagentTuiPlugin = Plugin.define({
   id: 'mdc-git.subagent.tui',
   setup(context) {
     return context.ui.slot({
@@ -231,3 +213,5 @@ export default Plugin.define({
     })
   }
 })
+
+export default subagentTuiPlugin
