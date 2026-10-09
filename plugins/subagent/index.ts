@@ -74,17 +74,13 @@ function toolSourceId(event: PermissionEvaluation) {
 async function findSubagent(ctx: Plugin.Context) {
   const tools = await ctx.tool.list()
   const subagent = tools.find((tool) => tool.id === 'subagent')
-  if (subagent === undefined) {
-    throw new Error('OpenCode native subagent tool is unavailable')
-  }
-
-  return subagent
+  return subagent ?? Promise.reject(new Error('OpenCode native subagent tool is unavailable'))
 }
 
 function allowSubagent(event: PermissionEvaluation, permitted: ReadonlyMap<string, string>) {
   const id = isSubagentAsk(event) ? toolSourceId(event) : undefined
-  const allowed = id !== undefined && permitted.get(id) === event.sessionID
-  event.effect = allowed ? 'allow' : event.effect
+  const isAllowed = id !== undefined && permitted.get(id) === event.sessionID
+  event.effect = isAllowed ? 'allow' : event.effect
 }
 
 async function firstAvailableAgent(ctx: Plugin.Context, signal: AbortSignal) {
