@@ -69,7 +69,7 @@ function bunResolvedVersion(lock, name) {
 }
 
 function nextSpecifier(current, version) {
-  const prefix = /^[~^]/v.exec(current)?.[0] ?? ''
+  const prefix = /^(?:\^|~)/v.exec(current)?.[0] ?? ''
   return `${prefix}${version}`
 }
 
