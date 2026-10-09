@@ -83,11 +83,8 @@ async function findSubagent(ctx: Plugin.Context) {
 
 function allowSubagent(event: PermissionEvaluation, permitted: ReadonlyMap<string, string>) {
   const id = isSubagentAsk(event) ? toolSourceId(event) : undefined
-  if (id === undefined || permitted.get(id) !== event.sessionID) {
-    return
-  }
-
-  event.effect = 'allow'
+  const allowed = id !== undefined && permitted.get(id) === event.sessionID
+  event.effect = allowed ? 'allow' : event.effect
 }
 
 async function firstAvailableAgent(ctx: Plugin.Context, signal: AbortSignal) {
