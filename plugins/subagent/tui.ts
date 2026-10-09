@@ -102,11 +102,7 @@ async function chooseModel(
   const info = available.find(
     (model) => model.providerID === selected.providerID && model.id === selected.id
   )
-  if (info === undefined) {
-    return selected
-  }
-
-  return selectVariant(context, info, current, selected)
+  return info === undefined ? selected : selectVariant(context, info, current, selected)
 }
 
 async function selectModel(
