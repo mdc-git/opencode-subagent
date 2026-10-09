@@ -90,13 +90,22 @@ function allowSubagent(event: PermissionEvaluation, permitted: ReadonlyMap<strin
   event.effect = 'allow'
 }
 
+async function resolveAgent(ctx: Plugin.Context, sessionID: string, signal: AbortSignal) {
+  const session = await ctx.session.get({ [sessionIdKey]: sessionID }, { signal })
+  const agents = session.agent === undefined ? await ctx.agent.list(undefined, { signal }) : undefined
+  const agent = session.agent ?? agents?.data[0].id
+  if (agent === undefined) {
+    throw new Error('No agent is available for the subagent session')
+  }
+
+  return agent
+}
+
 async function spawn(input: SpawnInput) {
   const { ctx, permitted, request, prompt, description, signal } = input
   signal.throwIfAborted()
 
-  let { agent } = await ctx.session.get({ [sessionIdKey]: request.sessionID }, { signal })
-  const agents = agent === undefined ? await ctx.agent.list(undefined, { signal }) : undefined
-  agent ??= agents?.data[0].id
+  const agent = await resolveAgent(ctx, request.sessionID, signal)
 
   signal.throwIfAborted()
   const subagent = await findSubagent(ctx)
