@@ -95,10 +95,7 @@ async function spawn(input: SpawnInput) {
   signal.throwIfAborted()
 
   let { agent } = await ctx.session.get({ [sessionIdKey]: request.sessionID }, { signal })
-  if (agent === undefined) {
-    const agents = await ctx.agent.list(undefined, { signal })
-    agent = agents.data[0].id
-  }
+  agent ??= (await ctx.agent.list(undefined, { signal })).data[0].id
 
   signal.throwIfAborted()
   const subagent = await findSubagent(ctx)
