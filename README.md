@@ -35,7 +35,9 @@ OpenCode configuration at `~/.config/opencode/opencode.jsonc`:
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["opencode-subagent@git+https://github.com/mdc-git/opencode-subagent.git#<release-tag>"]
+  "plugins": [
+    "opencode-subagent@git+https://github.com/mdc-git/opencode-subagent.git#<release-tag>"
+  ]
 }
 ```
 
