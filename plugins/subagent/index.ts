@@ -74,40 +74,30 @@ function toolSourceId(event: PermissionEvaluation) {
 async function findSubagent(ctx: Plugin.Context) {
   const tools = await ctx.tool.list()
   const subagent = tools.find((tool) => tool.id === 'subagent')
-  if (subagent === undefined) {
-    throw new Error('OpenCode native subagent tool is unavailable')
-  }
-
-  return subagent
+  return subagent ?? Promise.reject(new Error('OpenCode native subagent tool is unavailable'))
 }
 
 function allowSubagent(event: PermissionEvaluation, permitted: ReadonlyMap<string, string>) {
-  if (!isSubagentAsk(event)) {
-    return
-  }
+  const id = isSubagentAsk(event) ? toolSourceId(event) : undefined
+  const isAllowed = id !== undefined && permitted.get(id) === event.sessionID
+  event.effect = isAllowed ? 'allow' : event.effect
+}
 
-  const id = toolSourceId(event)
-  if (id === undefined) {
-    return
-  }
+async function firstAvailableAgent(ctx: Plugin.Context, signal: AbortSignal) {
+  const agents = await ctx.agent.list(undefined, { signal })
+  return agents.data[0].id
+}
 
-  if (permitted.get(id) !== event.sessionID) {
-    return
-  }
-
-  event.effect = 'allow'
+async function resolveAgent(ctx: Plugin.Context, sessionID: string, signal: AbortSignal) {
+  const session = await ctx.session.get({ [sessionIdKey]: sessionID }, { signal })
+  return session.agent ?? (await firstAvailableAgent(ctx, signal))
 }
 
 async function spawn(input: SpawnInput) {
   const { ctx, permitted, request, prompt, description, signal } = input
   signal.throwIfAborted()
 
-  const session = await ctx.session.get({ [sessionIdKey]: request.sessionID }, { signal })
-  let { agent } = session
-  if (agent === undefined) {
-    const agents = await ctx.agent.list(undefined, { signal })
-    agent = agents.data[0].id
-  }
+  const agent = await resolveAgent(ctx, request.sessionID, signal)
 
   signal.throwIfAborted()
   const subagent = await findSubagent(ctx)
@@ -134,13 +124,15 @@ async function spawn(input: SpawnInput) {
         }
       } satisfies ToolContext
     )
-    if (typeof result.content === 'string') {
-      await ctx.session.synthetic({
-        [sessionIdKey]: request.sessionID,
-        text: result.content,
-        resume: true
-      })
-    }
+    const synthetic =
+      typeof result.content === 'string'
+        ? ctx.session.synthetic({
+            [sessionIdKey]: request.sessionID,
+            text: result.content,
+            resume: true
+          })
+        : undefined
+    await synthetic
   } finally {
     permitted.delete(id)
   }
@@ -193,7 +185,7 @@ async function handoffSubagent(runtime: Runtime, input: RunInput, call: RpcCall)
   return {}
 }
 
-export default Plugin.define({
+const subagentPlugin = Plugin.define({
   id: 'mdc-git.subagent',
   async setup(ctx) {
     const runtime: Runtime = { ctx, permitted: new Map() }
@@ -211,3 +203,5 @@ export default Plugin.define({
     })
   }
 })
+
+export default subagentPlugin

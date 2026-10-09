@@ -7,7 +7,7 @@ import globals from 'globals'
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url))
 
-export default defineConfig([
+const config = defineConfig([
   ...eslintConfigXo({
     space: true,
     semicolon: false,
@@ -105,3 +105,5 @@ export default defineConfig([
     }
   }
 ])
+
+export default config
