@@ -26,19 +26,22 @@
     "zod": "latest"
   },
   "devDependencies": {
-    "@types/node": "^26.6.2",
-    "dependency-cruiser": "^18.3.1",
-    "eslint": "^10.11.0",
+    "@types/node": "^26.6.4",
+    "dependency-cruiser": "^18.5.0",
+    "eslint": "^10.12.0",
     "eslint-config-xo": "^2.0.0",
     "eslint-plugin-boundaries": "^7.2.0",
-    "eslint-plugin-sonarjs": "^4.2.1",
-    "globals": "^17.12.0",
-    "knip": "^6.37.0",
-    "prettier": "^3.9.8",
+    "eslint-plugin-sonarjs": "^4.2.2",
+    "globals": "^17.13.0",
+    "knip": "^6.41.0",
+    "prettier": "^3.9.9",
     "typescript": "^6.0.3"
   },
   "overrides": {
-    "@opentelemetry/core": "2.8.0"
+    "@opentelemetry/core": "2.8.0",
+    "braces": "npm:@dieub/braces-depth-guard@3.0.3-pn.3",
+    "handlebars": "4.7.10",
+    "katex": "0.18.2"
   },
   "$schema": "https://json.schemastore.org/package.json"
 }
