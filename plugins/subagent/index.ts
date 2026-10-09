@@ -82,16 +82,8 @@ async function findSubagent(ctx: Plugin.Context) {
 }
 
 function allowSubagent(event: PermissionEvaluation, permitted: ReadonlyMap<string, string>) {
-  if (!isSubagentAsk(event)) {
-    return
-  }
-
-  const id = toolSourceId(event)
-  if (id === undefined) {
-    return
-  }
-
-  if (permitted.get(id) !== event.sessionID) {
+  const id = isSubagentAsk(event) ? toolSourceId(event) : undefined
+  if (id === undefined || permitted.get(id) !== event.sessionID) {
     return
   }
 
@@ -102,8 +94,7 @@ async function spawn(input: SpawnInput) {
   const { ctx, permitted, request, prompt, description, signal } = input
   signal.throwIfAborted()
 
-  const session = await ctx.session.get({ [sessionIdKey]: request.sessionID }, { signal })
-  let { agent } = session
+  let { agent } = await ctx.session.get({ [sessionIdKey]: request.sessionID }, { signal })
   if (agent === undefined) {
     const agents = await ctx.agent.list(undefined, { signal })
     agent = agents.data[0].id
@@ -193,7 +184,7 @@ async function handoffSubagent(runtime: Runtime, input: RunInput, call: RpcCall)
   return {}
 }
 
-export default Plugin.define({
+const subagentPlugin = Plugin.define({
   id: 'mdc-git.subagent',
   async setup(ctx) {
     const runtime: Runtime = { ctx, permitted: new Map() }
@@ -211,3 +202,5 @@ export default Plugin.define({
     })
   }
 })
+
+export default subagentPlugin
