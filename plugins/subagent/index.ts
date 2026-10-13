@@ -119,6 +119,7 @@ async function spawn(input: SpawnInput) {
         agent: Agent.ID.make(agent),
         [messageIdKey]: SessionMessage.ID.create(),
         id: CallID.make(id),
+        signal,
         async progress() {
           await Promise.resolve()
         }
